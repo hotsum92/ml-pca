@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+import argparse
+import joblib
+import numpy as np
+import pandas as pd
+import os
+from sklearn.decomposition import PCA
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument('file_paths', nargs='+')
+
+parser.add_argument('--n_components', type=int, default=2)
+parser.add_argument('--random_state', type=int, default=2018)
+parser.add_argument('--whiten', type=bool, default=False)
+parser.add_argument('--out', type=str, default='pca')
+
+args = parser.parse_args()
+n_components = args.n_components
+random_state = args.random_state
+whiten = args.whiten
+
+file_paths = args.file_paths
+
+pca = PCA(n_components=n_components, random_state=random_state, whiten=whiten)
+
+data = np.array([joblib.load(file_path) for file_path in file_paths])
+data = np.array([x.flatten() for x in data])
+
+data = pd.DataFrame(data=data)
+results = pca.fit_transform(data)
+
+os.makedirs(args.out, exist_ok=True)
+
+for i, component in enumerate(results):
+    name = os.path.splitext(os.path.basename(file_paths[i]))[0]
+    joblib.dump(component, os.path.join(args.out, name + '.sav'))
+
